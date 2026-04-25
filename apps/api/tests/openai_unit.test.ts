@@ -1,30 +1,22 @@
 /**
  * Unit tests for server/lib/openai.ts
  *
- * Strategy: mock the `openai` npm package at module level so no real HTTP
- * calls are made. Each test controls exactly what `openai.chat.completions.create`
- * returns (or throws), then asserts on the utility function's output.
+ * Strategy: mock global `fetch` so no real HTTP calls are made. Each test
+ * controls exactly what the Gemini REST API returns (or throws), then asserts
+ * on the utility function's output.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// ── Mock the openai SDK ────────────────────────────────────────────────────
-
-const { mockCreate } = vi.hoisted(() => ({ mockCreate: vi.fn() }));
-
-vi.mock("openai", () => {
+const { mockFetch } = vi.hoisted(() => {
+  process.env.GOOGLE_API_KEY = "test-google-key";
+  delete process.env.GEMINI_API_KEY;
   return {
-    default: class MockOpenAI {
-      chat = {
-        completions: {
-          create: mockCreate,
-        },
-      };
-    },
+    mockFetch: vi.fn(),
   };
 });
 
-// Import AFTER setting up the mock (so the module gets the mocked constructor)
+// Import AFTER setting up the mock
 import {
   aiChat,
   evaluateSubjectiveAnswer,
@@ -32,11 +24,14 @@ import {
   analyzeTestPerformance,
 } from "../lib/openai";
 
-// ── Helpers ─────────────────────────────────────────────────────────────────
+vi.stubGlobal("fetch", mockFetch);
 
-function fakeCompletion(content: string) {
+function fakeGeminiTextResponse(content: string) {
   return {
-    choices: [{ message: { content } }],
+    ok: true,
+    json: vi.fn().mockResolvedValue({
+      candidates: [{ content: { parts: [{ text: content }] } }],
+    }),
   };
 }
 
@@ -45,10 +40,12 @@ function fakeCompletion(content: string) {
 // ════════════════════════════════════════════════════════════════════════════
 
 describe("aiChat()", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   it("should return the AI response content as a string", async () => {
-    mockCreate.mockResolvedValue(fakeCompletion("Gravity is 9.8 m/s²."));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse("Gravity is 9.8 m/s²."));
 
     const result = await aiChat([{ role: "user", content: "What is gravity?" }]);
 
@@ -56,18 +53,18 @@ describe("aiChat()", () => {
   });
 
   it("should auto-inject a system message when none is provided", async () => {
-    mockCreate.mockResolvedValue(fakeCompletion("Sure!"));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse("Sure!"));
 
     const messages = [{ role: "user" as const, content: "Help me." }];
     await aiChat(messages);
 
-    const calledMessages = mockCreate.mock.calls[0][0].messages;
-    expect(calledMessages[0].role).toBe("system");
-    expect(calledMessages.length).toBe(2);
+    const calledBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(calledBody.systemInstruction.parts[0].text).toMatch(/AI tutor for high school students/i);
+    expect(calledBody.contents).toHaveLength(1);
   });
 
   it("should NOT inject a second system message when one is already present", async () => {
-    mockCreate.mockResolvedValue(fakeCompletion("Ok."));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse("Ok."));
 
     const messages = [
       { role: "system" as const, content: "You are a custom tutor." },
@@ -75,13 +72,17 @@ describe("aiChat()", () => {
     ];
     await aiChat(messages);
 
-    const calledMessages = mockCreate.mock.calls[0][0].messages;
-    const systemMessages = calledMessages.filter((m: any) => m.role === "system");
-    expect(systemMessages.length).toBe(1);
+    const calledBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(calledBody.systemInstruction.parts[0].text).toBe("You are a custom tutor.");
+    expect(calledBody.contents).toHaveLength(1);
   });
 
-  it("should throw when the OpenAI API call fails", async () => {
-    mockCreate.mockRejectedValue(new Error("Network Error"));
+  it("should throw when the Gemini API call fails", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: vi.fn(),
+    });
 
     await expect(aiChat([{ role: "user", content: "Test" }])).rejects.toThrow(
       "AI is unavailable right now"
@@ -89,7 +90,10 @@ describe("aiChat()", () => {
   });
 
   it("should return fallback content when API returns an empty choice", async () => {
-    mockCreate.mockResolvedValue({ choices: [{ message: { content: null } }] });
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ candidates: [] }),
+    });
 
     const result = await aiChat([{ role: "user", content: "Test" }]);
 
@@ -106,7 +110,7 @@ describe("evaluateSubjectiveAnswer()", () => {
 
   it("should parse and return score, confidence, and feedback from a valid AI response", async () => {
     const aiResponse = JSON.stringify({ score: 8, confidence: 90, feedback: "Good answer." });
-    mockCreate.mockResolvedValue(fakeCompletion(aiResponse));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse(aiResponse));
 
     const result = await evaluateSubjectiveAnswer(
       "Photosynthesis converts sunlight to glucose.",
@@ -121,8 +125,8 @@ describe("evaluateSubjectiveAnswer()", () => {
   });
 
   it("should clamp score to 0 when AI returns a negative value", async () => {
-    mockCreate.mockResolvedValue(
-      fakeCompletion(JSON.stringify({ score: -3, confidence: 50, feedback: "Off topic." }))
+    mockFetch.mockResolvedValue(
+      fakeGeminiTextResponse(JSON.stringify({ score: -3, confidence: 50, feedback: "Off topic." }))
     );
 
     const result = await evaluateSubjectiveAnswer("bad answer", "q", "rubric", 10);
@@ -131,8 +135,8 @@ describe("evaluateSubjectiveAnswer()", () => {
   });
 
   it("should clamp score to maxMarks when AI overshoots", async () => {
-    mockCreate.mockResolvedValue(
-      fakeCompletion(JSON.stringify({ score: 99, confidence: 80, feedback: "Great." }))
+    mockFetch.mockResolvedValue(
+      fakeGeminiTextResponse(JSON.stringify({ score: 99, confidence: 80, feedback: "Great." }))
     );
 
     const result = await evaluateSubjectiveAnswer("perfect answer", "q", "rubric", 10);
@@ -141,8 +145,8 @@ describe("evaluateSubjectiveAnswer()", () => {
   });
 
   it("should clamp confidence to 100 when AI returns more than 100", async () => {
-    mockCreate.mockResolvedValue(
-      fakeCompletion(JSON.stringify({ score: 5, confidence: 150, feedback: "Fine." }))
+    mockFetch.mockResolvedValue(
+      fakeGeminiTextResponse(JSON.stringify({ score: 5, confidence: 150, feedback: "Fine." }))
     );
 
     const result = await evaluateSubjectiveAnswer("ok answer", "q", "rubric", 10);
@@ -151,7 +155,7 @@ describe("evaluateSubjectiveAnswer()", () => {
   });
 
   it("should return a fallback object when the API throws", async () => {
-    mockCreate.mockRejectedValue(new Error("Rate limit exceeded"));
+    mockFetch.mockRejectedValue(new Error("Rate limit exceeded"));
 
     const result = await evaluateSubjectiveAnswer("any", "q", "rubric", 10);
 
@@ -161,7 +165,7 @@ describe("evaluateSubjectiveAnswer()", () => {
   });
 
   it("should return a fallback object when AI returns invalid JSON", async () => {
-    mockCreate.mockResolvedValue(fakeCompletion("not json at all"));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse("not json at all"));
 
     const result = await evaluateSubjectiveAnswer("any", "q", "rubric", 10);
 
@@ -186,7 +190,7 @@ describe("generateStudyPlan()", () => {
         { title: "Physics Textbook Ch. 3", type: "article" },
       ],
     };
-    mockCreate.mockResolvedValue(fakeCompletion(JSON.stringify(payload)));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse(JSON.stringify(payload)));
 
     const result = await generateStudyPlan(["Newton's Laws", "Kinematics"], ["Optics"], "Physics");
 
@@ -196,7 +200,7 @@ describe("generateStudyPlan()", () => {
   });
 
   it("should return a fallback plan when the AI service throws", async () => {
-    mockCreate.mockRejectedValue(new Error("Timeout"));
+    mockFetch.mockRejectedValue(new Error("Timeout"));
 
     const result = await generateStudyPlan(["Algebra"], ["Geometry"], "Math");
 
@@ -206,7 +210,7 @@ describe("generateStudyPlan()", () => {
   });
 
   it("should return a fallback plan when AI response is not valid JSON", async () => {
-    mockCreate.mockResolvedValue(fakeCompletion("Here is your plan: review everything."));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse("Here is your plan: review everything."));
 
     const result = await generateStudyPlan(["Topic1"], ["Topic2"], "Science");
 
@@ -246,7 +250,7 @@ describe("analyzeTestPerformance()", () => {
       hardestQuestions: [{ questionId: 2, question: "Q2", avgScore: 3 }],
       recommendations: "Focus more on Q2 type problems.",
     };
-    mockCreate.mockResolvedValue(fakeCompletion(JSON.stringify(payload)));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse(JSON.stringify(payload)));
 
     const result = await analyzeTestPerformance(sampleResults);
 
@@ -256,7 +260,7 @@ describe("analyzeTestPerformance()", () => {
   });
 
   it("should compute averageScore locally as fallback when API throws", async () => {
-    mockCreate.mockRejectedValue(new Error("Service unavailable"));
+    mockFetch.mockRejectedValue(new Error("Service unavailable"));
 
     const result = await analyzeTestPerformance(sampleResults);
 
@@ -267,7 +271,7 @@ describe("analyzeTestPerformance()", () => {
   });
 
   it("should compute averageScore locally when AI returns invalid JSON", async () => {
-    mockCreate.mockResolvedValue(fakeCompletion("Looks like students did okay overall."));
+    mockFetch.mockResolvedValue(fakeGeminiTextResponse("Looks like students did okay overall."));
 
     const result = await analyzeTestPerformance(sampleResults);
 

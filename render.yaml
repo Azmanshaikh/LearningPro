@@ -16,6 +16,20 @@ services:
         sync: false
       - key: MONGODB_URL
         sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_CHAT_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_EVALUATION_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_STUDY_PLAN_MODEL
+        value: gemini-2.5-flash
+      - key: GEMINI_ANALYSIS_MODEL
+        value: gemini-2.5-flash
       - key: OPENAI_API_KEY
         sync: false
       - key: GOOGLE_API_KEY
@@ -34,6 +48,8 @@ services:
         sync: false
       - key: APP_URL
         sync: false
+      - key: START_MESSAGEPAL_HTTP
+        value: "false"
       - key: ASTRA_DB_SECURE_BUNDLE_PATH
         value: ./config/secure-connect-chat-db.zip
       - key: ASTRA_DB_APPLICATION_TOKEN

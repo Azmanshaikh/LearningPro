@@ -21,6 +21,7 @@ import { setupMessagePalWebSocket, startMessagePalServer } from "./message";
 import { initCassandra } from "./lib/cassandra";
 
 const app = express();
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -122,8 +123,16 @@ app.use("/api", requireDb);
   setupChatWebSocket(server, storage.sessionStore);
   setupMessagePalWebSocket(server, storage.sessionStore);
 
-  // Start Message HTTP server
-  startMessagePalServer();
+  // Render/web platforms expect a single externally reachable HTTP server.
+  const shouldStartMessagePalHttp =
+    process.env.START_MESSAGEPAL_HTTP === "true" ||
+    (process.env.NODE_ENV !== "production" && process.env.START_MESSAGEPAL_HTTP !== "false");
+
+  if (shouldStartMessagePalHttp) {
+    startMessagePalServer();
+  } else {
+    logger.info("Skipping standalone MessagePal HTTP server startup");
+  }
 
   // Serve static files BEFORE error handler
   if (serveWeb) {
