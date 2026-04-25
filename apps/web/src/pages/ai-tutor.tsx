@@ -1,44 +1,85 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useFirebaseAuth } from "@/contexts/firebase-auth-context";
 import { BentoHeroCard } from "@/components/chat/bento-hero-card";
 import { BentoSubjectCard } from "@/components/chat/bento-subject-card";
 import { RagChatSheet } from "@/components/chat/rag-chat-sheet";
-import { Sparkles, Rocket, Trophy, Code, GraduationCap } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { apiUrl } from "@/lib/runtime-config";
+import { auth } from "@/lib/firebase";
+import { Sparkles, Rocket, GraduationCap, Upload, FileText, MessageSquareShare } from "lucide-react";
+
+interface PdfSummaryResponse {
+  content?: string;
+  fileName?: string | null;
+  pages?: number | null;
+  extractedChars?: number | null;
+}
 
 export default function AiTutor() {
   const { currentUser } = useFirebaseAuth();
   const [activeSubject, setActiveSubject] = useState<string | null>(null);
   const [initialPrompt, setInitialPrompt] = useState("");
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [focusSubject, setFocusSubject] = useState("");
+  const [summaryMode, setSummaryMode] = useState<"summary" | "detailed">("summary");
+  const [selectedPdf, setSelectedPdf] = useState<File | null>(null);
+  const [isUploadingPdf, setIsUploadingPdf] = useState(false);
+  const [pdfResult, setPdfResult] = useState<string>("");
+  const [pdfError, setPdfError] = useState("");
+  const [pdfMeta, setPdfMeta] = useState<{
+    fileName: string | null;
+    pages: number | null;
+    extractedChars: number | null;
+  }>({
+    fileName: null,
+    pages: null,
+    extractedChars: null,
+  });
+
+  const handleCloseChat = () => {
+    setIsChatOpen(false);
+    setActiveSubject(null);
+    setInitialPrompt("");
+  };
 
   // Use real subjects from profile or fallback
   const userSubjects = currentUser?.profile?.subjects || [];
 
-  const subjects =
-    userSubjects.length > 0
-      ? userSubjects.map((s) => ({
-          id: s.toLowerCase(),
-          name: s,
-          description: `Your enrolled ${s} module.`,
-          tag: "ENROLLED",
-          progress: 0,
-          icon: <GraduationCap className="h-16 w-16 text-accent" strokeWidth={1.5} />,
-          isLocked: false,
-        }))
-      : [
-          {
-            id: "general",
-            name: "General Study",
-            description: "Ask anything about your curriculum.",
-            tag: "GUEST",
+  const subjects = useMemo(
+    () =>
+      userSubjects.length > 0
+        ? userSubjects.map((s) => ({
+            id: s.toLowerCase(),
+            name: s,
+            description: `Your enrolled ${s} module.`,
+            tag: "ENROLLED",
             progress: 0,
-            icon: <Sparkles className="h-16 w-16 text-accent" strokeWidth={1.5} />,
+            icon: <GraduationCap className="h-16 w-16 text-accent" strokeWidth={1.5} />,
             isLocked: false,
-          },
-        ];
+          }))
+        : [
+            {
+              id: "general",
+              name: "General Study",
+              description: "Ask anything about your curriculum.",
+              tag: "GUEST",
+              progress: 0,
+              icon: <Sparkles className="h-16 w-16 text-accent" strokeWidth={1.5} />,
+              isLocked: false,
+            },
+          ],
+    [userSubjects]
+  );
+
+  useEffect(() => {
+    if (!focusSubject && subjects.length > 0) {
+      setFocusSubject(subjects[0].name);
+    }
+  }, [focusSubject, subjects]);
 
   const handleAction = (subjectName: string, action: "revise" | "practice" | "chat") => {
     setActiveSubject(subjectName);
+    setFocusSubject(subjectName);
     if (action === "chat") {
       setInitialPrompt("");
     } else if (action === "revise") {
@@ -50,6 +91,83 @@ export default function AiTutor() {
     }
     setIsChatOpen(true);
   };
+
+  const buildAuthHeader = async () => {
+    if (auth?.currentUser) {
+      try {
+        return { Authorization: `Bearer ${await auth.currentUser.getIdToken()}` } as Record<string, string>;
+      } catch {
+        // Fall through to stored token.
+      }
+    }
+
+    const storedToken = localStorage.getItem("auth_token");
+    if (storedToken?.trim()) {
+      return { Authorization: `Bearer ${storedToken}` } as Record<string, string>;
+    }
+
+    return {} as Record<string, string>;
+  };
+
+  const handlePdfSubmit = async () => {
+    if (!selectedPdf) {
+      setPdfError("Please choose a PDF file first.");
+      return;
+    }
+
+    setIsUploadingPdf(true);
+    setPdfError("");
+    setPdfResult("");
+    setPdfMeta({ fileName: null, pages: null, extractedChars: null });
+
+    try {
+      const formData = new FormData();
+      formData.append("file", selectedPdf);
+      formData.append("mode", summaryMode);
+      formData.append("subject", focusSubject || "General Study");
+
+      const headers = await buildAuthHeader();
+      const response = await fetch(apiUrl("/api/ai/pdf-summary"), {
+        method: "POST",
+        credentials: "include",
+        headers,
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`${response.status}: ${errorText}`);
+      }
+
+      const data = (await response.json()) as PdfSummaryResponse;
+      setPdfResult(data?.content || "No output returned from the tutor.");
+      setPdfMeta({
+        fileName: data?.fileName ?? selectedPdf.name,
+        pages: data?.pages ?? null,
+        extractedChars: data?.extractedChars ?? null,
+      });
+    } catch (error) {
+      setPdfError(
+        error instanceof Error
+          ? error.message
+          : "Unable to summarize this PDF right now. Please try again."
+      );
+    } finally {
+      setIsUploadingPdf(false);
+    }
+  };
+
+  const handleDiscussPdfInChat = () => {
+    if (!pdfResult) return;
+
+    setActiveSubject(activeFocusSubject);
+    setInitialPrompt(
+      `I uploaded ${pdfMeta.fileName || "a PDF"} for ${activeFocusSubject}. Here is the tutor output:\n\n${pdfResult}\n\nNow help me study it. First, explain the most important ideas in simpler terms, then quiz me with 3 questions.`
+    );
+    setIsChatOpen(true);
+  };
+
+  const activeFocusSubject = focusSubject || subjects[0]?.name || "General Study";
 
   return (
     <div className="animate-fade-in-up space-y-10">
@@ -74,9 +192,26 @@ export default function AiTutor() {
 
       {/* Hero Section */}
       <section className="animate-fade-in-up" style={{ animationDelay: "100ms" }}>
+        <div className="mb-4 flex items-center gap-3">
+          <label className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            Focus Subject
+          </label>
+          <select
+            value={activeFocusSubject}
+            onChange={(e) => setFocusSubject(e.target.value)}
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+          >
+            {subjects.map((subject) => (
+              <option key={subject.id} value={subject.name}>
+                {subject.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <BentoHeroCard
-          title="Focus Session: Physics"
-          description="You've mastered 65% of Advanced Mechanics. EduAI suggests focusing on Rotational Motion today to bridge the gap in your recent quiz performance."
+          title={`Focus Session: ${activeFocusSubject}`}
+          description={`EduAI will adapt this session for ${activeFocusSubject}. Start a guided learning conversation, revise key concepts, or generate quick practice prompts for this subject.`}
           ctaText="Start Learning Session"
           visual={
             <div className="group relative">
@@ -87,8 +222,124 @@ export default function AiTutor() {
               />
             </div>
           }
-          onCtaClick={() => handleAction("Physics", "chat")}
+          onCtaClick={() => handleAction(activeFocusSubject, "chat")}
         />
+      </section>
+
+      {/* PDF Tutor Section */}
+      <section className="animate-fade-in-up" style={{ animationDelay: "150ms" }}>
+        <div className="rounded-2xl border border-border bg-card p-6 shadow-soft md:p-8">
+          <div className="mb-6 flex items-start justify-between gap-4">
+            <div>
+              <h2 className="mb-2 flex items-center gap-2 font-display text-2xl text-foreground">
+                <FileText className="h-6 w-6 text-accent" />
+                PDF Tutor Lab
+              </h2>
+              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+                Upload a PDF and get either a whole-document summary or a detailed explanation tailored
+                to{" "}
+                <span className="font-semibold text-foreground">{activeFocusSubject}</span> using your AI tutor.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="md:col-span-2">
+              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                PDF File
+              </label>
+              <input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => {
+                  setSelectedPdf(e.target.files?.[0] || null);
+                  setPdfError("");
+                }}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground file:mr-4 file:rounded-md file:border-0 file:bg-accent-soft file:px-3 file:py-1.5 file:text-xs file:font-bold file:uppercase file:tracking-widest file:text-accent"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                Output Mode
+              </label>
+              <select
+                value={summaryMode}
+                onChange={(e) =>
+                  setSummaryMode(e.target.value === "detailed" ? "detailed" : "summary")
+                }
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30"
+              >
+                <option value="summary">Whole Summary</option>
+                <option value="detailed">Detailed Explanation</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Button
+              onClick={handlePdfSubmit}
+              disabled={isUploadingPdf || !selectedPdf}
+              className="rounded-full bg-accent px-6 py-2.5 text-xs font-bold uppercase tracking-widest text-white hover:bg-accent/90"
+            >
+              <Upload className="mr-2 h-4 w-4" />
+              {isUploadingPdf ? "Analyzing PDF..." : "Analyze PDF"}
+            </Button>
+            {selectedPdf && (
+              <span className="text-xs text-muted-foreground">Selected: {selectedPdf.name}</span>
+            )}
+            {isUploadingPdf && (
+              <span className="text-xs font-medium text-accent">
+                Extracting text and generating tutor notes...
+              </span>
+            )}
+          </div>
+
+          {pdfError && (
+            <p className="mt-4 rounded-lg border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {pdfError}
+            </p>
+          )}
+
+          {pdfResult && (
+            <div className="mt-5 rounded-xl border border-border bg-muted/20 p-4">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">
+                    Tutor Output ({summaryMode === "detailed" ? "Detailed" : "Summary"})
+                  </h3>
+                  <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+                    {pdfMeta.fileName && (
+                      <span className="rounded-full border border-border px-2 py-1">
+                        {pdfMeta.fileName}
+                      </span>
+                    )}
+                    {pdfMeta.pages !== null && (
+                      <span className="rounded-full border border-border px-2 py-1">
+                        {pdfMeta.pages} page{pdfMeta.pages === 1 ? "" : "s"}
+                      </span>
+                    )}
+                    {pdfMeta.extractedChars !== null && (
+                      <span className="rounded-full border border-border px-2 py-1">
+                        {pdfMeta.extractedChars.toLocaleString()} chars read
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleDiscussPdfInChat}
+                  className="rounded-full"
+                >
+                  <MessageSquareShare className="mr-2 h-4 w-4" />
+                  Discuss In Tutor Chat
+                </Button>
+              </div>
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {pdfResult}
+              </p>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Subjects Section */}
@@ -129,7 +380,7 @@ export default function AiTutor() {
       {activeSubject && (
         <RagChatSheet
           isOpen={isChatOpen}
-          onClose={() => setIsChatOpen(false)}
+          onClose={handleCloseChat}
           subjectName={activeSubject}
           initialPrompt={initialPrompt}
         />
