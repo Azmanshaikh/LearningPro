@@ -19,7 +19,7 @@ export default [
   },
   // Node/server files
   {
-    files: ["server/**/*.ts"],
+    files: ["apps/api/**/*.ts"],
     languageOptions: {
       parser: tsParser,
       globals: { ...globals.node },
@@ -39,7 +39,7 @@ export default [
   },
   // Client/React files
   {
-    files: ["client/src/**/*.{ts,tsx}"],
+    files: ["apps/web/src/**/*.{ts,tsx}"],
     languageOptions: {
       parser: tsParser,
       globals: { ...globals.browser },
@@ -77,7 +77,7 @@ export default [
   },
   // Shared
   {
-    files: ["shared/**/*.ts"],
+    files: ["packages/shared/**/*.ts"],
     languageOptions: {
       parser: tsParser,
       globals: { ...globals.node },

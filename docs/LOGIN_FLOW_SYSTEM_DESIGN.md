@@ -275,8 +275,6 @@ Web:
   setPersistence(auth, browserSessionPersistence)  ← Remember Me OFF
   setPersistence(auth, inMemoryPersistence)        ← No persistence
 
-Mobile (React Native):
-  Firebase React Native SDK persists session automatically via AsyncStorage
 ```
 
 ---

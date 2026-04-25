@@ -10,12 +10,12 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "client", "src"),
-      "@shared": path.resolve(__dirname, "shared"),
+      "@": path.resolve(__dirname, "apps", "web", "src"),
+      "@shared": path.resolve(__dirname, "packages", "shared"),
       "@assets": path.resolve(__dirname, "attached_assets"),
     },
   },
-  root: path.resolve(__dirname, "client"),
+  root: path.resolve(__dirname, "apps", "web"),
   envDir: path.resolve(__dirname),
   build: {
     chunkSizeWarningLimit: 1600,

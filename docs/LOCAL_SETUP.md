@@ -9,7 +9,6 @@ This guide walks through setting up the project locally **without Docker**. For 
 - **Git**
 - **MongoDB** (for structured application data)
 - **Apache Cassandra** (optional - for MessagePal chat history)
-- **Expo CLI** (for mobile development): `npm install -g expo-cli`
 
 ## 1. Clone the Repository
 
@@ -84,6 +83,16 @@ The application will be available at: **[http://localhost:5001](http://localhost
 
 > **Note:** Both the frontend and backend run on port 5001 — there is no separate Vite dev server.
 
+To prepare for split hosting later, you can also set:
+
+```env
+SERVE_WEB=false
+VITE_API_URL=https://your-api.example.com
+VITE_WS_URL=wss://your-api.example.com
+```
+
+With that setup, the backend runs as API-only and the web app can be hosted separately as static assets.
+
 ## 5. Available Scripts
 
 ### Web App
@@ -97,76 +106,31 @@ The application will be available at: **[http://localhost:5001](http://localhost
 | `npm run lint` | Run ESLint |
 | `npm run format` | Format code with Prettier |
 
-### Mobile App
-| Command | Description |
-|---------|-------------|
-| `cd mobile && npm start` | Start Expo development server |
-| `cd mobile && npm run android` | Run on Android |
-| `cd mobile && npm run ios` | Run on iOS |
-| `cd mobile && npm run type-check` | Type-check TypeScript |
-
-## 6. Mobile App Setup (Optional)
-
-If you want to develop the mobile app:
-
-1. **Navigate to mobile directory:**
-   ```bash
-   cd mobile
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Create environment file:**
-   ```bash
-   cp .env.example .env
-   ```
-
-4. **Update mobile `.env`** with the same Firebase credentials and API URL
-
-5. **Start Expo:**
-   ```bash
-   npm start
-   ```
-
-6. **Run on device:**
-   - Press `i` for iOS simulator (macOS only)
-   - Press `a` for Android emulator
-   - Scan QR code with Expo Go app on physical device
-
-See [mobile/README.md](../mobile/README.md) for detailed mobile setup instructions.
-
 ## Project Structure
 
 ```
-client/src/     → React frontend code (web)
-mobile/         → React Native mobile app
-server/         → Express backend code
-shared/         → Shared types and schemas
+apps/web/src/   → React frontend code (web)
+apps/api/       → Express backend code
+packages/shared/→ Shared types and schemas
 ```
 
 | Directory | Description |
 |-----------|-------------|
-| `client/src/components/` | React UI components (shadcn/ui based) |
-| `client/src/contexts/` | React context providers (auth, theme, chat) |
-| `client/src/pages/` | Page-level components |
-| `client/src/lib/` | Utilities, Firebase config, API helpers |
-| `mobile/app/` | Expo Router pages (auth, tabs, modals) |
-| `mobile/components/` | Mobile UI components |
-| `mobile/lib/` | Mobile utilities, API client, offline storage |
-| `server/lib/` | Server utilities (OpenAI, Firebase Admin, mailer) |
-| `server/routes.ts` | All API route definitions |
-| `server/storage.ts` | Data storage (MongoDB + Cassandra) |
-| `shared/schema.ts` | Zod schema and type definitions |
-| `shared/mongo-schema.ts` | Mongoose models |
+| `apps/web/src/components/` | React UI components (shadcn/ui based) |
+| `apps/web/src/contexts/` | React context providers (auth, theme, chat) |
+| `apps/web/src/pages/` | Page-level components |
+| `apps/web/src/lib/` | Utilities, Firebase config, API helpers |
+| `apps/api/lib/` | Server utilities (OpenAI, Firebase Admin, mailer) |
+| `apps/api/routes.ts` | Main API route definitions |
+| `apps/api/storage.ts` | Data storage (MongoDB + Cassandra) |
+| `packages/shared/schema.ts` | Zod schema and type definitions |
+| `packages/shared/mongo-schema.ts` | Mongoose models |
 
 ## Troubleshooting
 
 ### Port 5001 in use
 
-Change the port in `server/index.ts` (line with `const port = 5001`).
+Change the port in `apps/api/index.ts` (line with `const port = 5001`).
 
 ### Firebase authentication not working
 
@@ -176,7 +140,7 @@ Change the port in `server/index.ts` (line with `const port = 5001`).
 
 ### Environment variables not loading
 
-- Confirm `.env` is in the **project root** (not inside `client/` or `server/`)
+- Confirm `.env` is in the **project root** (not inside `apps/web/` or `apps/api/`)
 - Restart the dev server after changing `.env`
 
 ### npm install fails
@@ -193,7 +157,3 @@ npm install
 - Double-check the username, password, and database name in your connection string
 - For Cassandra (optional): Ensure it's running if you want MessagePal chat history
 
-### Mobile app not connecting to backend
-- If testing on a physical device, use your computer's local IP instead of `localhost`
-- Example: `EXPO_PUBLIC_API_URL=http://192.168.1.100:5001`
-- Ensure your firewall allows connections on port 5001
