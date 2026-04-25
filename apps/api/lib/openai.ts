@@ -2,13 +2,25 @@ import OpenAI from "openai";
 import { z } from "zod";
 import { logger } from "./logger";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-if (!process.env.OPENAI_API_KEY) {
-  logger.warn("OPENAI_API_KEY is not set. AI features (tutor, test generation) will not work.");
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY?.trim();
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY?.trim();
+const AI_PROVIDER = OPENAI_API_KEY ? "openai" : GOOGLE_API_KEY ? "gemini" : "none";
+const AI_MODEL =
+  AI_PROVIDER === "gemini"
+    ? process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash"
+    : process.env.OPENAI_MODEL?.trim() || "gpt-4o";
+
+if (AI_PROVIDER === "none") {
+  logger.warn(
+    "Neither OPENAI_API_KEY nor GOOGLE_API_KEY is set. AI features (tutor, test generation) will not work."
+  );
 }
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "",
+  apiKey: AI_PROVIDER === "gemini" ? GOOGLE_API_KEY || "" : OPENAI_API_KEY || "",
+  ...(AI_PROVIDER === "gemini"
+    ? { baseURL: "https://generativelanguage.googleapis.com/v1beta/openai/" }
+    : {}),
 });
 
 interface ChatMessage {
@@ -50,8 +62,33 @@ const PerformanceAnalysisSchema = z.object({
   recommendations: z.string(),
 });
 
-// ── OpenAI error normaliser ───────────────────────────────────────────────────
-function handleOpenAIError(err: any): never {
+function buildCompletionRequest(
+  messages: ChatMessage[],
+  options?: { requireJsonObject?: boolean }
+): {
+  model: string;
+  messages: ChatMessage[];
+  response_format?: { type: "json_object" };
+} {
+  const request: {
+    model: string;
+    messages: ChatMessage[];
+    response_format?: { type: "json_object" };
+  } = {
+    model: AI_MODEL,
+    messages,
+  };
+
+  // Gemini OpenAI-compatible API may reject response_format.
+  if (options?.requireJsonObject && AI_PROVIDER === "openai") {
+    request.response_format = { type: "json_object" };
+  }
+
+  return request;
+}
+
+// ── AI error normaliser ───────────────────────────────────────────────────────
+function handleAIError(err: any): never {
   if (err?.status === 429)
     throw Object.assign(new Error("AI rate limit reached, try again shortly"), { status: 503 });
   if (err?.status === 503 || err?.code === "ECONNREFUSED")
@@ -81,17 +118,14 @@ export async function aiChat(
       });
     }
 
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: messages,
-    });
+    const response = await openai.chat.completions.create(buildCompletionRequest(messages));
 
     return {
       content: response.choices[0].message.content || "I don't have a response for that.",
     };
   } catch (error) {
     logger.error("AI chat error:", error);
-    handleOpenAIError(error);
+    handleAIError(error);
   }
 }
 
@@ -108,26 +142,27 @@ export async function evaluateSubjectiveAnswer(
   maxMarks: number
 ): Promise<EvaluationResult> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert teacher evaluating student answers. 
+    const response = await openai.chat.completions.create(
+      buildCompletionRequest(
+        [
+          {
+            role: "system",
+            content: `You are an expert teacher evaluating student answers. 
           Given the question, rubric, and student's answer, provide an evaluation with:
           1. A score between 0 and ${maxMarks} (can be decimal)
           2. A confidence level between 0 and 100 indicating how certain you are of your evaluation
           3. Constructive feedback explaining the score
           
           Respond with JSON in this format: { "score": number, "confidence": number, "feedback": string }`,
-        },
-        {
-          role: "user",
-          content: `Question: ${question}\nRubric: ${rubric}\nStudent Answer: ${studentAnswer}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+          },
+          {
+            role: "user",
+            content: `Question: ${question}\nRubric: ${rubric}\nStudent Answer: ${studentAnswer}`,
+          },
+        ],
+        { requireJsonObject: true }
+      )
+    );
 
     const content = response.choices[0]?.message?.content || "{}";
     try {
@@ -163,27 +198,28 @@ export async function generateStudyPlan(
   subject: string
 ): Promise<{ plan: string; resources: Array<{ title: string; type: string; url?: string }> }> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `Generate a personalized study plan focused on improving weak topics, along with recommended resources.
+    const response = await openai.chat.completions.create(
+      buildCompletionRequest(
+        [
+          {
+            role: "system",
+            content: `Generate a personalized study plan focused on improving weak topics, along with recommended resources.
           Return a JSON object with two fields:
           1. "plan": a structured study plan with bullet points and time estimates
           2. "resources": an array of recommended resources, each with "title", "type" (video, article, practice), and optional "url"
           
           Keep the response concise and focused on actionable advice.`,
-        },
-        {
-          role: "user",
-          content: `Subject: ${subject}
+          },
+          {
+            role: "user",
+            content: `Subject: ${subject}
           Weak Topics: ${weakTopics.join(", ")}
           Strong Topics: ${strongTopics.join(", ")}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+          },
+        ],
+        { requireJsonObject: true }
+      )
+    );
 
     const content = response.choices[0]?.message?.content || "{}";
     try {
@@ -217,24 +253,25 @@ export async function analyzeTestPerformance(
   recommendations: string;
 }> {
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: `Analyze test performance data and provide insights.
+    const response = await openai.chat.completions.create(
+      buildCompletionRequest(
+        [
+          {
+            role: "system",
+            content: `Analyze test performance data and provide insights.
           Return a JSON object with:
           1. "averageScore": the calculated average score
           2. "hardestQuestions": an array of questions with lowest average scores (max 3)
           3. "recommendations": teaching recommendations based on the results`,
-        },
-        {
-          role: "user",
-          content: `Test Data: ${JSON.stringify(testResults)}`,
-        },
-      ],
-      response_format: { type: "json_object" },
-    });
+          },
+          {
+            role: "user",
+            content: `Test Data: ${JSON.stringify(testResults)}`,
+          },
+        ],
+        { requireJsonObject: true }
+      )
+    );
 
     const content = response.choices[0]?.message?.content || "{}";
     try {

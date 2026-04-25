@@ -28,7 +28,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(helmet({ contentSecurityPolicy: false })); // CSP handled by Vite in dev
 
 // ── CORS ──────────────────────────────────────────────────────────────────────
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5001,http://localhost:5173")
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:4173,http://localhost:5173,http://localhost:5001")
   .split(",")
   .map((o) => o.trim());
 const serveWeb = process.env.SERVE_WEB !== "false";
@@ -40,6 +40,19 @@ app.use(
 
       // Allow configured origins
       if (allowedOrigins.includes(origin)) return cb(null, true);
+
+      // In development, allow localhost/127.0.0.1 regardless of port so
+      // local Vite dev/preview ports do not break CORS preflights.
+      if (process.env.NODE_ENV !== "production") {
+        try {
+          const url = new URL(origin);
+          if (url.hostname === "localhost" || url.hostname === "127.0.0.1") {
+            return cb(null, true);
+          }
+        } catch {
+          // Ignore malformed origin and continue to explicit rejection below.
+        }
+      }
 
       // In production, also allow the deployment domain
       if (process.env.NODE_ENV === "production") {

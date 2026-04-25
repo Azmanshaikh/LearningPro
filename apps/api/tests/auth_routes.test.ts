@@ -112,12 +112,13 @@ describe("Auth Routes", () => {
       const res = await request(app).post("/api/auth/firebase").send({ idToken: "valid-token" });
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({
+      expect(res.body).toMatchObject({
         userId: 1,
         displayName: "Test User",
         role: "student",
-        avatar: undefined,
       });
+      expect(typeof res.body.token).toBe("string");
+      expect(res.body.token.length).toBeGreaterThan(0);
     });
 
     it("should create a new user if one does not exist", async () => {
@@ -134,12 +135,14 @@ describe("Auth Routes", () => {
       const res = await request(app).post("/api/auth/firebase").send({ idToken: "valid-token" });
 
       expect(res.status).toBe(200);
-      expect(res.body).toEqual({
+      expect(res.body).toMatchObject({
         userId: 123,
         displayName: "New User",
         role: "student",
         avatar: "pic_url",
       });
+      expect(typeof res.body.token).toBe("string");
+      expect(res.body.token.length).toBeGreaterThan(0);
     });
   });
 });
