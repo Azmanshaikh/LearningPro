@@ -195,6 +195,7 @@ function App() {
   return (
     <Switch>
       <Route path="/" component={getDashboard()} />
+      <Route path="/login" component={() => <Redirect to="/" />} />
       <Route path="/dashboard" component={withLayout(protect(Dashboard, ["teacher"]))} />
       <Route
         path="/principal-dashboard"
