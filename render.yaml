@@ -3,13 +3,11 @@ services:
     name: learningpro-api
     runtime: node
     plan: starter
-    buildCommand: npm install && npm run build:api
+    buildCommand: npm install --include=dev && npm run build:api
     startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
     envVars:
-      - key: NODE_ENV
-        value: production
       - key: SERVE_WEB
         value: "false"
       - key: CORS_ORIGIN
