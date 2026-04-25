@@ -10,12 +10,19 @@ function getDefaultOrigin() {
     return "http://localhost:5001";
   }
 
-  return window.location.origin;
+  const { protocol, hostname, port, origin } = window.location;
+
+  // When frontend runs on Vite ports, default API traffic to backend port 5001.
+  if (["4173", "4174", "5173", "5174"].includes(port)) {
+    return `${protocol}//${hostname}:5001`;
+  }
+
+  return origin;
 }
 
 export function apiUrl(path: string) {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  const apiBase = getConfiguredApiBase();
+  const apiBase = getConfiguredApiBase() || getDefaultOrigin();
   return apiBase ? `${apiBase}${normalizedPath}` : normalizedPath;
 }
 

@@ -77,12 +77,22 @@ function buildFallbackProfile(user: import("firebase/auth").User): UserProfile |
 async function syncFirebaseSession(user: import("firebase/auth").User) {
   try {
     const idToken = await user.getIdToken();
-    await fetch(apiUrl("/api/auth/firebase"), {
+    const response = await fetch(apiUrl("/api/auth/firebase"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
       body: JSON.stringify({ idToken }),
     });
+
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = await response.json().catch(() => null);
+    if (payload?.token) {
+      localStorage.setItem("auth_token", payload.token);
+      localStorage.setItem("auth_user", JSON.stringify(payload));
+    }
   } catch (e) {
     console.warn("[auth] Failed to sync Firebase session to backend:", e);
   }

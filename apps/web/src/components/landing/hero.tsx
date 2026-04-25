@@ -3,7 +3,11 @@ import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import heroImg from "@/assets/hero-runway.png";
 
-export const Hero = () => {
+interface HeroProps {
+  onHowItWorks?: () => void;
+}
+
+export const Hero = ({ onHowItWorks }: HeroProps) => {
   const [, setLocation] = useLocation();
   return (
     <section className="relative flex min-h-screen items-center overflow-hidden pt-16">
@@ -49,6 +53,7 @@ export const Hero = () => {
               size="lg"
               variant="outline"
               className="sketch-border sketch-shadow hover-tilt rounded-full bg-card px-8 font-heading text-base"
+              onClick={onHowItWorks}
             >
               See How It Works
             </Button>
