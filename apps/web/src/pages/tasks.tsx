@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,6 +11,7 @@ import {
   Filter,
   Loader2,
   AlertCircle,
+  Check,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -99,11 +100,70 @@ const PRIORITY_ICONS: Record<TaskPriority, React.ReactNode> = {
   ),
 };
 
+function NewTaskInput({
+  columnStatus,
+  onSave,
+  onCancel,
+}: {
+  columnStatus: TaskStatus;
+  onSave: (title: string, status: TaskStatus) => void;
+  onCancel: () => void;
+}) {
+  const [value, setValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const submit = () => {
+    const trimmed = value.trim();
+    if (trimmed) onSave(trimmed, columnStatus);
+    else onCancel();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -6 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.15 }}
+      className="rounded-lg border border-indigo-500/40 bg-zinc-900 p-3 shadow-sm"
+    >
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") submit();
+          if (e.key === "Escape") onCancel();
+        }}
+        placeholder="Task name…"
+        className="w-full bg-transparent text-sm font-medium text-zinc-100 placeholder-zinc-500 outline-none"
+      />
+      <div className="mt-2.5 flex items-center gap-2">
+        <button
+          onClick={submit}
+          className="flex items-center gap-1 rounded-md bg-indigo-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-indigo-500"
+        >
+          <Check className="h-3 w-3" /> Save
+        </button>
+        <button
+          onClick={onCancel}
+          className="rounded-md px-2.5 py-1 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </motion.div>
+  );
+}
+
 export default function TasksPage() {
   const qc = useQueryClient();
   const [draggedTask, setDraggedTask] = useState<string | null>(null);
+  const [addingToColumn, setAddingToColumn] = useState<TaskStatus | null>(null);
 
-  // ── Fetch ──────────────────────────────────────────────────────────────
   const {
     data: tasks = [],
     isLoading,
@@ -113,7 +173,12 @@ export default function TasksPage() {
     queryKey: ["/api/tasks"],
   });
 
-  // ── Status update (drag-and-drop) ──────────────────────────────────────
+  const createMutation = useMutation({
+    mutationFn: (data: { title: string; status: TaskStatus; priority: TaskPriority; tags: string[] }) =>
+      apiRequest("POST", "/api/tasks", data).then((r) => r.json()),
+    onSettled: () => qc.invalidateQueries({ queryKey: ["/api/tasks"] }),
+  });
+
   const updateStatusMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: TaskStatus }) =>
       apiRequest("PATCH", `/api/tasks/${id}`, { status }).then((r) => r.json()),
@@ -131,13 +196,11 @@ export default function TasksPage() {
     onSettled: () => qc.invalidateQueries({ queryKey: ["/api/tasks"] }),
   });
 
-  // ── Delete ─────────────────────────────────────────────────────────────
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/tasks/${id}`),
     onSettled: () => qc.invalidateQueries({ queryKey: ["/api/tasks"] }),
   });
 
-  // ── Drag handlers ──────────────────────────────────────────────────────
   const handleDragStart = (e: React.DragEvent, id: string) => {
     setDraggedTask(id);
     e.dataTransfer.setData("taskId", id);
@@ -152,13 +215,15 @@ export default function TasksPage() {
   const handleDrop = (e: React.DragEvent, newStatus: TaskStatus) => {
     e.preventDefault();
     const taskId = e.dataTransfer.getData("taskId");
-    if (taskId) {
-      updateStatusMutation.mutate({ id: taskId, status: newStatus });
-    }
+    if (taskId) updateStatusMutation.mutate({ id: taskId, status: newStatus });
     setDraggedTask(null);
   };
 
-  // ── Loading / error states ─────────────────────────────────────────────
+  const handleSaveTask = (title: string, status: TaskStatus) => {
+    createMutation.mutate({ title, status, priority: "medium", tags: [] });
+    setAddingToColumn(null);
+  };
+
   if (isLoading) {
     return (
       <div className="flex h-[calc(100vh-2rem)] flex-col items-center justify-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950 text-zinc-50 shadow-2xl">
@@ -206,10 +271,11 @@ export default function TasksPage() {
           <div className="mx-2 hidden h-6 w-px bg-zinc-700 sm:block" />
           <Button
             size="sm"
+            onClick={() => setAddingToColumn("todo")}
             className="border border-indigo-500/50 bg-indigo-600 text-white shadow-[0_0_15px_rgba(79,70,229,0.3)] hover:bg-indigo-500"
           >
             <Plus className="mr-1.5 h-4 w-4" />
-            New Issue
+            New Task
           </Button>
         </div>
       </div>
@@ -241,6 +307,7 @@ export default function TasksPage() {
                   <Button
                     variant="ghost"
                     size="icon"
+                    onClick={() => setAddingToColumn(status.id)}
                     className="h-6 w-6 rounded text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -250,6 +317,16 @@ export default function TasksPage() {
                 {/* Task List */}
                 <div className="hidden-scrollbar flex min-h-[100px] flex-1 flex-col gap-2.5 overflow-y-auto pb-2">
                   <AnimatePresence>
+                    {/* Inline new task input */}
+                    {addingToColumn === status.id && (
+                      <NewTaskInput
+                        key="new-task-input"
+                        columnStatus={status.id}
+                        onSave={handleSaveTask}
+                        onCancel={() => setAddingToColumn(null)}
+                      />
+                    )}
+
                     {columnTasks.map((task) => (
                       <motion.div
                         layout
@@ -265,11 +342,35 @@ export default function TasksPage() {
                           "group cursor-grab rounded-lg border border-zinc-800 bg-zinc-900 p-3 transition-all hover:border-zinc-700 hover:bg-zinc-800 active:cursor-grabbing",
                           draggedTask === task.id
                             ? "scale-95 border-indigo-500/50 opacity-40"
-                            : "shadow-sm"
+                            : "shadow-sm",
+                          task.status === "done" && "opacity-60"
                         )}
                       >
                         <div className="mb-2 flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium leading-snug text-zinc-100 transition-colors group-hover:text-zinc-50">
+                          {/* Tick button */}
+                          <button
+                            onClick={() =>
+                              updateStatusMutation.mutate({
+                                id: task.id,
+                                status: task.status === "done" ? "todo" : "done",
+                              })
+                            }
+                            className={cn(
+                              "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-all",
+                              task.status === "done"
+                                ? "border-indigo-400 bg-indigo-500 text-white"
+                                : "border-zinc-600 bg-transparent text-transparent hover:border-indigo-400 hover:text-indigo-400"
+                            )}
+                          >
+                            <Check className="h-2.5 w-2.5" />
+                          </button>
+
+                          <p
+                            className={cn(
+                              "flex-1 text-sm font-medium leading-snug text-zinc-100 transition-colors group-hover:text-zinc-50",
+                              task.status === "done" && "line-through text-zinc-400"
+                            )}
+                          >
                             {task.title}
                           </p>
                           <Button
@@ -351,7 +452,7 @@ export default function TasksPage() {
                   </AnimatePresence>
 
                   {/* Drop zone visual hint when empty */}
-                  {columnTasks.length === 0 && (
+                  {columnTasks.length === 0 && addingToColumn !== status.id && (
                     <div className="flex h-24 items-center justify-center rounded-lg border border-dashed border-zinc-800 bg-zinc-900/30">
                       <span className="text-xs font-medium tracking-wide text-zinc-500">
                         Drop issues here
