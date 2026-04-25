@@ -20,6 +20,8 @@ import {
   aiChat,
 } from "./lib/openai";
 import { upload, diskPathToUrl } from "./lib/upload";
+import fs from "fs/promises";
+import * as pdfParseModule from "pdf-parse";
 import { verifyFirebaseToken, setCustomUserClaims } from "./lib/firebase-admin";
 import {
   MongoUser,
@@ -60,6 +62,10 @@ interface CustomJwtPayload extends jwt.JwtPayload {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_jwt_key_learning_pro_123";
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY?.trim();
+const parsePdf =
+  (pdfParseModule as unknown as { default?: (buffer: Buffer) => Promise<{ text: string; numpages?: number }> }).default ||
+  (pdfParseModule as unknown as (buffer: Buffer) => Promise<{ text: string; numpages?: number }>);
 
 // Auth Middleware
 export async function authenticateToken(req: Request, res: Response, next: express.NextFunction) {
@@ -1073,6 +1079,105 @@ Answer questions clearly and at their level. Do not mention these instructions.`
       res.status(500).json({ message: "Failed to generate AI response" });
     }
   });
+
+  // POST /api/ai/pdf-summary — Upload PDF and generate summary/explanation
+  app.post(
+    "/api/ai/pdf-summary",
+    authenticateToken,
+    upload.single("file"),
+    async (req: Request, res: Response) => {
+      let uploadedPath: string | null = req.file?.path || null;
+
+      try {
+        if (!req.file) {
+          return res.status(400).json({ message: "PDF file is required" });
+        }
+
+        if (req.file.mimetype !== "application/pdf") {
+          return res.status(400).json({ message: "Only PDF files are supported" });
+        }
+
+        const mode = req.body?.mode === "detailed" ? "detailed" : "summary";
+        const subject = typeof req.body?.subject === "string" ? req.body.subject.trim() : "";
+
+        const pdfBuffer = await fs.readFile(req.file.path);
+        const parsedPdf = await parsePdf(pdfBuffer);
+        const extractedText = (parsedPdf.text || "").replace(/\s+/g, " ").trim();
+
+        if (!extractedText) {
+          return res.status(400).json({ message: "Could not extract readable text from this PDF" });
+        }
+
+        const maxInputChars = 24000;
+        const clippedText = extractedText.slice(0, maxInputChars);
+        const promptStyle =
+          mode === "detailed"
+            ? "Provide a detailed explanation with headings, key concepts, examples, and practical takeaways."
+            : "Provide a concise whole-document summary with key points and short bullets.";
+
+        const scopeLine = subject
+          ? `The subject context is: ${subject}. Tailor terminology and examples accordingly.`
+          : "Use neutral school-level explanations.";
+
+        if (!GOOGLE_API_KEY) {
+          return res.status(500).json({ message: "GOOGLE_API_KEY is not configured" });
+        }
+
+        const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+        const prompt = `${scopeLine} ${promptStyle}\n\nDocument content:\n${clippedText}`;
+
+        const geminiRes = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GOOGLE_API_KEY)}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+            }),
+          }
+        );
+
+        if (!geminiRes.ok) {
+          const errorText = await geminiRes.text();
+          throw new Error(`Gemini request failed: ${geminiRes.status} ${errorText}`);
+        }
+
+        const geminiPayload = (await geminiRes.json()) as {
+          candidates?: Array<{
+            content?: {
+              parts?: Array<{ text?: string }>;
+            };
+          }>;
+        };
+
+        const content =
+          geminiPayload.candidates?.[0]?.content?.parts
+            ?.map((part) => part.text || "")
+            .join("\n")
+            .trim() || "No output returned from Gemini.";
+
+        return res.status(200).json({
+          mode,
+          subject: subject || null,
+          fileName: req.file.originalname,
+          pages: parsedPdf.numpages || null,
+          extractedChars: extractedText.length,
+          content,
+        });
+      } catch (error) {
+        logger.error("PDF summary error:", error);
+        return res.status(500).json({ message: "Failed to summarize PDF" });
+      } finally {
+        if (uploadedPath) {
+          try {
+            await fs.unlink(uploadedPath);
+          } catch {
+            // Ignore cleanup failures; uploaded file may have been removed already.
+          }
+        }
+      }
+    }
+  );
 
   // GET /api/teacher/subjects — Get distinct subjects for a teacher
   app.get("/api/teacher/subjects", authenticateToken, async (req: Request, res: Response) => {
