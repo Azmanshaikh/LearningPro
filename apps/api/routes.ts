@@ -18,6 +18,7 @@ import { processOCRImage } from "./lib/tesseract";
 import {
   evaluateSubjectiveAnswer,
   aiChat,
+  isChatProviderConfigured,
 } from "./lib/openai";
 import { upload, diskPathToUrl } from "./lib/upload";
 import { verifyFirebaseToken, setCustomUserClaims } from "./lib/firebase-admin";
@@ -1068,8 +1069,17 @@ Answer questions clearly and at their level. Do not mention these instructions.`
         ? await aiChat(messages, systemPrompt)
         : await aiChat(messages);
       res.status(200).json(response);
-    } catch (error) {
+    } catch (error: any) {
       logger.error("AI chat error:", error);
+
+      if (error?.status === 503 || !isChatProviderConfigured()) {
+        return res.status(200).json({
+          content:
+            "The AI tutor is temporarily unavailable right now. You can keep studying here, and try again in a little while.",
+          degraded: true,
+        });
+      }
+
       res.status(500).json({ message: "Failed to generate AI response" });
     }
   });

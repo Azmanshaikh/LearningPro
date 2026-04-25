@@ -431,6 +431,6 @@ describe('Microservices Architecture', () => {
 
   it('should have proper environment variables', () => {
     expect(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || true).toBeTruthy();
-    expect(process.env.OPENAI_API_KEY || true).toBeTruthy();
+    expect(process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || true).toBeTruthy();
   });
 });

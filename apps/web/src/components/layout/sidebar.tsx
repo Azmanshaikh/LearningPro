@@ -212,7 +212,7 @@ export function Sidebar({ className }: SidebarProps) {
       href: "/student-dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
     },
-    { title: "Test MVP", href: "/test/1", icon: <FileQuestion className="h-5 w-5" /> },
+    { title: "Tests", href: "/tests", icon: <FileQuestion className="h-5 w-5" /> },
     { title: "My Progress", href: "/progress", icon: <BarChart className="h-5 w-5" /> },
     {
       title: "Resources",
