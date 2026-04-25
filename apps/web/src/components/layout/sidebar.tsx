@@ -115,7 +115,7 @@ export function Sidebar({ className }: SidebarProps) {
       icon: <Building2 className="h-5 w-5" />,
       isSoon: true,
     },
-    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" />, isSoon: true },
+    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
   // School Admin navigation items
@@ -141,7 +141,7 @@ export function Sidebar({ className }: SidebarProps) {
     },
     { title: "Analytics", href: "/analytics", icon: <BarChart className="h-5 w-5" /> },
     { title: "Messages", href: "/messages", icon: <MessageSquare className="h-5 w-5" /> },
-    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" />, isSoon: true },
+    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
   // Admin navigation items
@@ -202,7 +202,7 @@ export function Sidebar({ className }: SidebarProps) {
     { title: "Live Classes", href: "/live-classes", icon: <Video className="h-5 w-5" /> },
     { title: "AI Classroom", href: "/ai-classroom", icon: <Sparkles className="h-5 w-5" /> },
     { title: "Messages", href: "/messages", icon: <MessageSquare className="h-5 w-5" /> },
-    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" />, isSoon: true },
+    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
   // Student navigation items
@@ -231,7 +231,7 @@ export function Sidebar({ className }: SidebarProps) {
       isSoon: true,
     },
     { title: "Messages", href: "/messages", icon: <MessageSquare className="h-5 w-5" /> },
-    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" />, isSoon: true },
+    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" /> },
     { title: "Tasks", href: "/tasks", icon: <FileQuestion className="h-5 w-5" /> },
   ];
 
@@ -257,7 +257,7 @@ export function Sidebar({ className }: SidebarProps) {
       isSoon: true,
     },
     { title: "Messages", href: "/messages", icon: <MessageSquare className="h-5 w-5" /> },
-    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" />, isSoon: true },
+    { title: "Settings", href: "/settings", icon: <Settings className="h-5 w-5" /> },
   ];
 
   let items = teacherNavItems;
