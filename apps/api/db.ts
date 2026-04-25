@@ -47,8 +47,6 @@ export const connectMongoDB = async () => {
   if (!process.env.MONGODB_URL) return;
   try {
     await mongoose.connect(process.env.MONGODB_URL, {
-      tls: process.env.MONGODB_URL.includes("+srv"),
-      tlsAllowInvalidCertificates: process.env.MONGODB_URL.includes("+srv") ? true : undefined,
       // Connection pool configuration
       maxPoolSize: 10,
       minPoolSize: 2,

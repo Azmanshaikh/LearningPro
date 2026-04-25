@@ -13,7 +13,7 @@ Use the included [render.yaml](../render.yaml) blueprint or create the service m
 
 - Service type: `Web Service`
 - Runtime: `Node`
-- Build command: `npm install && npm run build:api`
+- Build command: `npm install --include=dev && npm run build:api`
 - Start command: `npm start`
 - Health check path: `/api/health`
 
@@ -24,7 +24,6 @@ The app already binds to `process.env.PORT`, which matches Render's web service 
 Set these in the Render dashboard:
 
 - `SERVE_WEB=false`
-- `NODE_ENV=production`
 - `CORS_ORIGIN=https://your-frontend-domain.vercel.app`
 - `SESSION_SECRET=...`
 - `MONGODB_URL=...`
