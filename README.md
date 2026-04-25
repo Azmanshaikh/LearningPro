@@ -83,36 +83,43 @@ Most school platforms are either too simple or too expensive. EduAI is **open-so
 - In-session chat panel, participant list, and screen sharing
 - Session recording and replay support
 
-### 📱 Mobile App (iOS & Android) - ✅ COMPLETE
-- **Native mobile experience** built with React Native + Expo
-- **Full feature parity** with web app
-- **Offline support** with automatic sync when online
-- **Push notifications** for messages, tests, and announcements
-- **OCR scanning** with camera integration
-- **Real-time messaging** with WebSocket support
-- **Optimized performance** with FlatList and memoization
-- **Dark mode ready** (coming soon)
-
----
-
 ## 🛠️ Tech Stack
 
 | Layer | Technology |
 |---|---|
 | **Frontend (Web)** | React 18, Vite, TypeScript, Tailwind CSS, shadcn/ui, Framer Motion |
-| **Frontend (Mobile)** | React Native 0.81, Expo SDK 54, TypeScript, NativeWind, React Native Paper |
 | **Backend** | Node.js, Express, TypeScript |
 | **Auth** | Firebase Authentication (Google + email/password) |
 | **Primary DB** | MongoDB Atlas + Mongoose |
 | **Message Store** | Apache Cassandra |
-| **Mobile Storage** | AsyncStorage (offline caching) |
 | **AI** | OpenAI GPT-4o |
-| **OCR** | Tesseract.js (web), Expo Camera + backend OCR (mobile) |
+| **OCR** | Tesseract.js |
 | **Real-time** | WebSockets (ws) |
-| **Push Notifications** | Expo Notifications |
 | **Email** | Nodemailer (SMTP) |
 | **Video** | Daily.co / BigBlueButton |
 | **DevOps** | Docker, Kubernetes, Terraform, GitHub Actions |
+
+---
+
+## 🧱 Repository Architecture
+
+```text
+apps/
+  api/        Express API, WebSocket servers, backend tests
+  web/        React + Vite web app
+packages/
+  shared/     Shared Zod schemas, Mongoose models, cross-app types
+services/     Auxiliary services and experiments
+docs/         Product, setup, and architecture docs
+```
+
+The root `npm run dev`, `npm run build`, `npm test`, and `npm start` commands still work. The difference is structural: web, api, and shared code now have clear ownership boundaries so they can be deployed independently later.
+
+For split hosting later:
+
+- Host `apps/web` as static assets.
+- Host `apps/api` as the API/WebSocket service with `SERVE_WEB=false`.
+- Point the frontend at the backend with `VITE_API_URL` and optionally `VITE_WS_URL`.
 
 ---
 
@@ -176,15 +183,9 @@ CASSANDRA_PASSWORD=
 # Session (Auto-generated in dev, set in production)
 SESSION_SECRET=your_random_session_secret
 
-# Mobile App (mobile/.env)
-EXPO_PUBLIC_API_URL=http://localhost:5001
-EXPO_PUBLIC_FIREBASE_API_KEY=
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=
-EXPO_PUBLIC_FIREBASE_APP_ID=
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 ```
 
-See [`.env.example`](.env.example) and [`mobile/.env.example`](mobile/.env.example) for the full list.
+See [`.env.example`](.env.example) for the full list.
 
 ---
 
@@ -226,29 +227,25 @@ Every role sees their onboarding wizard until their stage is complete — then l
 ## 📂 Project Structure
 
 ```
-├── client/          # React + Vite frontend (web)
-│   └── src/
-│       ├── pages/       # Route-level page components
-│       ├── components/  # Reusable UI components (shadcn/ui)
-│       ├── contexts/    # React context providers (auth, theme, chat)
-│       ├── hooks/       # Custom hooks
-│       └── lib/         # API client, Firebase, utilities
-├── mobile/          # React Native + Expo mobile app ✅ COMPLETE
-│   ├── app/         # Expo Router pages (auth, tabs, modals)
-│   ├── components/  # Mobile UI components
-│   ├── lib/         # API client, Firebase, offline storage, notifications
-│   ├── hooks/       # Custom hooks (network status, etc.)
-│   └── types/       # TypeScript type definitions
-├── server/          # Node.js + Express backend
-│   ├── routes/      # Express route handlers
-│   ├── lib/         # Firebase Admin, OpenAI, mailer, upload
-│   ├── message/     # MessagePal WebSocket + Cassandra layer
-│   ├── services/    # Business logic services
-│   └── tests/       # Backend tests
-├── shared/          # Zod schemas + Mongoose models (shared by web, mobile, server)
-│   ├── schema.ts    # Main Zod schemas
-│   ├── mongo-schema.ts  # Mongoose models
-│   └── cassandra-schema.ts  # Cassandra schemas
+├── apps/
+│   ├── web/         # React + Vite frontend (web)
+│   │   ├── src/
+│   │   │   ├── pages/       # Route-level page components
+│   │   │   ├── components/  # Reusable UI components (shadcn/ui)
+│   │   │   ├── contexts/    # React context providers (auth, theme, chat)
+│   │   │   ├── hooks/       # Custom hooks
+│   │   │   └── lib/         # API client, Firebase, runtime URL helpers
+│   └── api/         # Node.js + Express backend
+│       ├── routes/      # Express route handlers
+│       ├── lib/         # Firebase Admin, OpenAI, mailer, upload
+│       ├── message/     # MessagePal WebSocket + Cassandra layer
+│       ├── services/    # Business logic services
+│       └── tests/       # Backend tests
+├── packages/
+│   └── shared/      # Zod schemas + Mongoose models shared by web and API
+│       ├── schema.ts    # Main Zod schemas
+│       ├── mongo-schema.ts  # Mongoose models
+│       └── cassandra-schema.ts  # Cassandra schemas
 ├── .agent/          # AI agent context and workflows
 │   ├── spec/        # Feature specifications
 │   ├── prompts/     # Agent workflow templates
@@ -268,9 +265,7 @@ Every role sees their onboarding wizard until their stage is complete — then l
 
 ## 📚 Documentation
 
-- **[Local Setup Guide](docs/LOCAL_SETUP.md)** - Get started in 5 minutes (web + mobile)
-- **[Mobile App README](mobile/README.md)** - Mobile-specific setup and features
-- **[Mobile Migration Status](MOBILE_MIGRATION_STATUS.md)** - Mobile app completion status (100%)
+- **[Local Setup Guide](docs/LOCAL_SETUP.md)** - Get started in 5 minutes
 - **[Database Architecture](docs/DATABASE.md)** - Schema, indexes, and best practices
 - **[Database Improvements](docs/DATABASE_IMPROVEMENTS.md)** - Recent performance optimizations
 - **[Contributing Guide](docs/CONTRIBUTING.md)** - How to contribute
@@ -294,18 +289,6 @@ npm run format:check # Prettier check
 npm run build        # Production build
 npm start            # Run production build
 ```
-
-### Mobile App
-```bash
-cd mobile
-npm start            # Start Expo development server
-npm run android      # Run on Android
-npm run ios          # Run on iOS
-npm run web          # Run on web
-npm run type-check   # TypeScript type check
-```
-
----
 
 ## 🤝 Contributing
 

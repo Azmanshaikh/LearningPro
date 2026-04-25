@@ -1,7 +1,7 @@
 node_modules
 dist
 .DS_Store
-server/public
+apps/api/public
 vite.config.ts.*
 *.tar.gz
 server/.env.env
@@ -13,10 +13,3 @@ GEMINI.md
 .vscode/
 !.env.example
 .kiro
-
-# Mobile (React Native / Expo)
-mobile/.expo/
-mobile/dist/
-mobile/web-build/
-mobile/.env
-mobile/.env.*
