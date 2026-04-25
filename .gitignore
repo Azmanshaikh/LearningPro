@@ -1,0 +1,22 @@
+node_modules
+dist
+.DS_Store
+server/public
+vite.config.ts.*
+*.tar.gz
+server/.env.env
+.env
+.env.*
+.env.local
+.env.*.local
+GEMINI.md
+.vscode/
+!.env.example
+.kiro
+
+# Mobile (React Native / Expo)
+mobile/.expo/
+mobile/dist/
+mobile/web-build/
+mobile/.env
+mobile/.env.*

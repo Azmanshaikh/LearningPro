@@ -1,0 +1,515 @@
+@import url("https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;500;600&family=DM+Sans:wght@300;400;500;600&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Base ── */
+    --cream-50: #fdfaf5;
+    --cream-100: #f5f0e8;
+    --cream-150: #f2f0eb;
+    --cream-200: #eeebe3;
+    --cream-300: #e8e4dc;
+    --cream-400: #e0dbd3;
+
+    /* ── Text ── */
+    --ink-900: #1a1a1a;
+    --ink-600: #5c5c5c;
+    --ink-400: #9a9a9a;
+
+    /* ── Primary Accent ── */
+    --accent: #cc785c;
+    --accent-hover: #b8654a;
+    --accent-soft: #f2e8e3;
+
+    /* ── NEW: Energy Color ── */
+    --energy: #f0a500;
+    --energy-soft: #fef3d0;
+    --energy-dark: #c87e00;
+
+    /* ── NEW: Progress Color ── */
+    --progress: #4a7c59;
+    --progress-soft: #ebf3ee;
+
+    /* ── Shadcn Defaults (Mapped to Palette) ── */
+    --background: 38 29% 94%;
+    --foreground: 0 0% 10%;
+    --card: 38 67% 98%;
+    --card-foreground: 0 0% 10%;
+    --popover: 38 67% 98%;
+    --popover-foreground: 0 0% 10%;
+    --primary: 15 51% 58%;
+    --primary-foreground: 38 29% 94%;
+    --secondary: 48 20% 91%;
+    --secondary-foreground: 0 0% 10%;
+    --muted: 40 16% 89%;
+    --muted-foreground: 0 0% 36%;
+    --accent-base: 20 37% 92%;
+    --accent-foreground: 15 51% 58%;
+    --destructive: 2 42% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 39 16% 85%;
+    --input: 38 12% 76%;
+    --ring: 15 51% 58% / 0.3;
+    --radius: 0.75rem;
+
+    --illustration-bg: 38 29% 94%;
+    --ticker-bg: 48 20% 91%;
+    --ticker-text: 0 0% 10%;
+    --bubble-1: 38 67% 98%;
+    --bubble-2: 48 20% 91%;
+    --bubble-3: 40 16% 89%;
+
+    /* ─── Sidebar (Light) ─── */
+    --sidebar-background: 48 20% 91%;
+    --sidebar-foreground: 0 0% 10%;
+    --sidebar-primary: 251 83% 75%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 16% 89%;
+    --sidebar-accent-foreground: 0 0% 10%;
+    --sidebar-border: 39 16% 85%;
+    --sidebar-ring: 15 51% 58% / 0.3;
+
+    /* ─── Chart Colors (Vibrant Educational) ─── */
+    --chart-1: 15 51% 58%;
+    --chart-2: 251 83% 75%;
+    --chart-3: 215 38% 47%;
+    --chart-4: 39 54% 41%;
+    --chart-5: 137 25% 39%;
+
+    /* ─── Chat ─── */
+    --bubble-own: 40 16% 89%;
+    /* User: Tertiary Cream */
+    --bubble-own-foreground: 0 0% 10%;
+    /* AI: White surface */
+    --bubble-other-foreground: 0 0% 10%;
+
+    /* ─── Gradients (Dynamic) ─── */
+    --grad-streak: linear-gradient(135deg, #fef3d0 0%, #fdeab0 60%, #fbdc80 100%);
+    --grad-xp: linear-gradient(135deg, #f2e8e3 0%, #edd5c8 100%);
+    --grad-badge: linear-gradient(145deg, #fffbf0 0%, #fef3d0 50%, #f2e8e3 100%);
+    --grad-challenge: linear-gradient(135deg, #ebf3ee 0%, #d6eae0 100%);
+    --grad-math: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    --grad-physics: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    --grad-chemistry: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+    --grad-biology: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    --grad-english: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    --grad-history: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
+  }
+
+  .dark {
+    /* Warm Dark Palette */
+    --background: 24 10% 10%;
+    /* #1C1917ish */
+    --foreground: 38 29% 94%;
+    --card: 24 10% 15%;
+    /* #292524ish */
+    --card-foreground: 38 29% 94%;
+    --popover: 24 10% 15%;
+    --popover-foreground: 38 29% 94%;
+    --primary: 15 51% 58%;
+    --primary-foreground: 38 29% 94%;
+    --secondary: 24 10% 20%;
+    --secondary-foreground: 38 29% 94%;
+    --muted: 24 10% 25%;
+    --muted-foreground: 0 0% 60%;
+    --accent-base: 24 10% 25%;
+    --accent-foreground: 38 29% 94%;
+    --destructive: 2 42% 52%;
+    --destructive-foreground: 38 29% 94%;
+    --border: 24 10% 22%;
+    /* #3C3836ish */
+    --input: 24 10% 22%;
+    --ring: 15 51% 58% / 0.3;
+
+    /* Dark Mode specific variables */
+    --cream-50: #292524;
+    --cream-100: #1c1917;
+    --cream-200: #24201e;
+    --cream-300: #3c3836;
+    --cream-400: #4a4543;
+
+    --ink-900: #f5f0e8;
+    --ink-600: #e0dbd3;
+    --ink-400: #c8c3bb;
+
+    --accent: #cc785c;
+    --accent-hover: #b8654a;
+    --accent-soft: #4a4543;
+
+    --energy: #f0a500;
+    --energy-soft: #4a4543;
+    --energy-dark: #c87e00;
+
+    --progress: #4a7c59;
+    --progress-soft: #4a4543;
+
+    --illustration-bg: 24 10% 10%;
+    --ticker-bg: 24 10% 15%;
+    --ticker-text: 38 29% 94%;
+    --bubble-1: 24 10% 15%;
+    --bubble-2: 24 10% 20%;
+    --bubble-3: 24 10% 25%;
+
+    --sidebar-background: 24 10% 15%;
+    --sidebar-foreground: 38 29% 94%;
+    --sidebar-primary: 251 83% 75%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 24 10% 20%;
+    --sidebar-accent-foreground: 38 29% 94%;
+    --sidebar-border: 24 10% 22%;
+    --sidebar-ring: 15 51% 58% / 0.3;
+
+    --chart-1: 15 51% 58%;
+    --chart-2: 251 83% 75%;
+    --chart-3: 215 38% 47%;
+    --chart-4: 39 54% 41%;
+    --chart-5: 137 25% 39%;
+
+    --bubble-own: 24 10% 25%;
+    --bubble-own-foreground: 38 29% 94%;
+    --bubble-other: 24 10% 10%;
+    --bubble-other-foreground: 38 29% 94%;
+
+    /* ─── Gradients (Dynamic Dark) ─── */
+    --grad-streak: linear-gradient(135deg, #4a3a10 0%, #3b2a08 60%, #2a1d05 100%);
+    --grad-xp: linear-gradient(135deg, #3a2a22 0%, #2a1c15 100%);
+    --grad-badge: linear-gradient(145deg, #2a251e 0%, #3a3018 50%, #3a2a22 100%);
+    --grad-challenge: linear-gradient(135deg, #1c2a22 0%, #15221b 100%);
+    --grad-math: linear-gradient(135deg, #1a1c30 0%, #101222 100%);
+    --grad-physics: linear-gradient(135deg, #1a2235 0%, #121828 100%);
+    --grad-chemistry: linear-gradient(135deg, #15302e 0%, #0d2220 100%);
+    --grad-biology: linear-gradient(135deg, #153018 0%, #0d2210 100%);
+    --grad-english: linear-gradient(135deg, #302a15 0%, #221c0d 100%);
+    --grad-history: linear-gradient(135deg, #302015 0%, #22150d 100%);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background font-body text-foreground antialiased;
+    font-size: 0.9375rem;
+  }
+
+  :focus-visible {
+    outline: 2px solid hsl(var(--primary));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* ── Typography Voices ── */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display font-medium text-foreground;
+  }
+
+  /* Student Pages specific overrides via classes */
+  .student-h1 {
+    @apply font-sans text-3xl font-bold tracking-tight text-foreground;
+  }
+
+  .teacher-h1 {
+    @apply font-display text-4xl font-medium text-foreground;
+  }
+
+  .stat-number {
+    @apply font-sans text-5xl font-extrabold tracking-tighter text-foreground;
+  }
+
+  .streak-number {
+    @apply font-sans text-6xl font-black text-energy;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+  }
+
+  h2 {
+    font-size: 1.75rem;
+  }
+
+  h3 {
+    @apply font-body font-semibold;
+    font-size: 1.125rem;
+  }
+}
+
+/* ─── Animations ─── */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@layer utilities {
+  .animate-fade-in-up {
+    animation: fade-in-up 0.5s ease-out both;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.3s ease-out both;
+  }
+
+  .animate-slide-in-right {
+    animation: slide-in-right 0.4s ease-out both;
+  }
+
+  .delay-75 {
+    animation-delay: 75ms;
+  }
+
+  .delay-150 {
+    animation-delay: 150ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+
+  /* Live pulse for live rooms dot */
+  .animate-pulse-live {
+    animation: pulse-live 1.8s ease-in-out infinite;
+  }
+
+  /* Gentle float for hero icon */
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  /* Shimmer for skeleton loading */
+  .animate-shimmer {
+    animation: shimmer 1.5s linear infinite;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.06) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+  }
+
+  /* Hero card glow border */
+  .glow-border-blue {
+    box-shadow:
+      0 0 0 1px rgba(99, 102, 241, 0.3),
+      0 0 24px rgba(99, 102, 241, 0.12),
+      0 4px 24px rgba(0, 0, 0, 0.12);
+  }
+
+  .glow-border-green {
+    box-shadow:
+      0 0 0 1px rgba(16, 185, 129, 0.3),
+      0 0 24px rgba(16, 185, 129, 0.12);
+  }
+
+  .glow-border-orange {
+    box-shadow:
+      0 0 0 1px rgba(245, 158, 11, 0.3),
+      0 0 24px rgba(245, 158, 11, 0.12);
+  }
+
+  .glow-border-purple {
+    box-shadow:
+      0 0 0 1px rgba(139, 92, 246, 0.3),
+      0 0 24px rgba(139, 92, 246, 0.12);
+  }
+
+  /* Thin scrollbar for chat panels */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 2px;
+  }
+
+  /* Hidden scrollbar for tasks board */
+  .hidden-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .hidden-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* landing page hover tilt */
+  .hover-tilt {
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .hover-tilt:hover {
+    transform: perspective(800px) rotateY(-2deg) rotateX(2deg) scale(1.02);
+    box-shadow: 8px 8px 0px hsl(var(--primary) / 1);
+  }
+}
+
+@layer components {
+  /* landing page sketch components */
+  .sketch-border {
+    border: 1.5px solid hsl(var(--border) / 1);
+    /* Thin black outlines */
+    border-radius: 1rem;
+  }
+
+  .sketch-shadow {
+    box-shadow: 6px 6px 0px hsl(var(--border) / 0.1);
+    /* subtle grey shadow */
+  }
+
+  .sketch-shadow-yellow {
+    box-shadow: 6px 6px 0px hsl(var(--primary) / 1);
+    /* solid pop color shadow */
+  }
+
+  .teal-glow {
+    box-shadow: 0 0 20px hsl(var(--secondary) / 0.3);
+  }
+
+  /* Notebook Feature Styles */
+  .notebook-bg {
+    background-color: #f8f9fa;
+  }
+
+  .dark .notebook-bg {
+    background-color: hsl(var(--background));
+  }
+
+  .notebook-page {
+    background: #fffdf6;
+    border-radius: 12px;
+    box-shadow:
+      12px 14px 0px rgba(0, 0, 0, 0.08),
+      0 0 40px rgba(0, 0, 0, 0.05);
+    background-image: repeating-linear-gradient(to bottom, #fffdf6, #fffdf6 31px, #dde6ff 32px);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+  .dark .notebook-page {
+    background: #111111;
+    box-shadow:
+      12px 14px 0px rgba(0, 0, 0, 0.5),
+      0 0 40px rgba(0, 0, 0, 0.5);
+    background-image: repeating-linear-gradient(to bottom, #111111, #111111 31px, #2a2a2a 32px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .notebook-card {
+    background: #fffdf6;
+    border-radius: 14px;
+    padding: 24px;
+    box-shadow: 4px 6px 0px #000;
+    transition:
+      transform 0.3s ease,
+      box-shadow 0.3s ease;
+    background-image: repeating-linear-gradient(to bottom, #fffdf6, #fffdf6 28px, #dde6ff 29px);
+    border: 1px solid #000;
+  }
+
+  .dark .notebook-card {
+    background: #161618;
+    box-shadow: 4px 6px 0px hsl(var(--primary));
+    background-image: repeating-linear-gradient(to bottom, #161618, #161618 28px, #333333 29px);
+    border: 1px solid hsl(var(--primary));
+  }
+}
