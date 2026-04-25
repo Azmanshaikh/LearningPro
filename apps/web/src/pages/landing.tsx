@@ -14,6 +14,18 @@ import {
   ContactForm,
 } from "@/components/landing";
 
+const scrollToSection = (href: string) => {
+  if (typeof window === "undefined") return;
+
+  const id = href.replace(/^#/, "");
+  const target = document.getElementById(id);
+  if (!target) return;
+
+  const navbarOffset = 80;
+  const top = target.getBoundingClientRect().top + window.scrollY - navbarOffset;
+  window.scrollTo({ top, behavior: "smooth" });
+};
+
 // --- Navbar ---
 const Navbar = () => {
   const [open, setOpen] = useState(false);
@@ -40,6 +52,10 @@ const Navbar = () => {
               key={l.href}
               href={l.href}
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              onClick={(e) => {
+                e.preventDefault();
+                scrollToSection(l.href);
+              }}
             >
               {l.label}
             </a>
@@ -68,7 +84,11 @@ const Navbar = () => {
               key={l.href}
               href={l.href}
               className="block text-sm font-medium text-muted-foreground"
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                e.preventDefault();
+                setOpen(false);
+                scrollToSection(l.href);
+              }}
             >
               {l.label}
             </a>
@@ -161,7 +181,7 @@ const LandingPage = () => (
   <div className="min-h-screen bg-background text-foreground selection:bg-primary/20">
     <Navbar />
     <main>
-      <Hero />
+      <Hero onHowItWorks={() => scrollToSection("#journey")} />
       <Turbulence />
       <Journey />
       <NotebookFeature />

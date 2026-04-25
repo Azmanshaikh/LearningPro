@@ -69,11 +69,20 @@ export function RagChatSheet({ isOpen, onClose, subjectName, initialPrompt }: Ra
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (error) {
       console.error("AI chat error:", error);
+      let message = "I couldn't reach the tutor service. Please check that you're signed in and try again.";
+      if (error instanceof Error) {
+        if (error.message.includes("401")) {
+          message = "Your session expired. Please log in again and retry.";
+        } else if (error.message.includes("403")) {
+          message = "Your login token was rejected by the server. Please log out and log in again.";
+        } else if (error.message.includes("500")) {
+          message = "Tutor service is online, but the AI provider call failed. Please try again in a moment.";
+        }
+      }
       const fallbackMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content:
-          "I couldn't reach the tutor service. Please check that you're signed in and try again.",
+        content: message,
       };
       setMessages((prev) => [...prev, fallbackMsg]);
     } finally {

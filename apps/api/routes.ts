@@ -22,7 +22,7 @@ import {
 } from "./lib/openai";
 import { upload, diskPathToUrl } from "./lib/upload";
 import fs from "fs/promises";
-import * as pdfParseModule from "pdf-parse";
+import pdfParse from "pdf-parse";
 import { verifyFirebaseToken, setCustomUserClaims } from "./lib/firebase-admin";
 import {
   MongoUser,
@@ -1111,7 +1111,7 @@ Answer questions clearly and at their level. Do not mention these instructions.`
         const subject = typeof req.body?.subject === "string" ? req.body.subject.trim() : "";
 
         const pdfBuffer = await fs.readFile(req.file.path);
-        const parsedPdf = await parsePdf(pdfBuffer);
+        const parsedPdf = await pdfParse(pdfBuffer);
         const extractedText = (parsedPdf.text || "").replace(/\s+/g, " ").trim();
 
         if (!extractedText) {
