@@ -21,7 +21,7 @@ import {
 } from "./lib/openai";
 import { upload, diskPathToUrl } from "./lib/upload";
 import fs from "fs/promises";
-import * as pdfParseModule from "pdf-parse";
+import pdfParse from "pdf-parse";
 import { verifyFirebaseToken, setCustomUserClaims } from "./lib/firebase-admin";
 import {
   MongoUser,
@@ -63,9 +63,6 @@ interface CustomJwtPayload extends jwt.JwtPayload {
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_jwt_key_learning_pro_123";
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY?.trim();
-const parsePdf =
-  (pdfParseModule as unknown as { default?: (buffer: Buffer) => Promise<{ text: string; numpages?: number }> }).default ||
-  (pdfParseModule as unknown as (buffer: Buffer) => Promise<{ text: string; numpages?: number }>);
 
 // Auth Middleware
 export async function authenticateToken(req: Request, res: Response, next: express.NextFunction) {
@@ -1101,7 +1098,7 @@ Answer questions clearly and at their level. Do not mention these instructions.`
         const subject = typeof req.body?.subject === "string" ? req.body.subject.trim() : "";
 
         const pdfBuffer = await fs.readFile(req.file.path);
-        const parsedPdf = await parsePdf(pdfBuffer);
+        const parsedPdf = await pdfParse(pdfBuffer);
         const extractedText = (parsedPdf.text || "").replace(/\s+/g, " ").trim();
 
         if (!extractedText) {
