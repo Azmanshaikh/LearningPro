@@ -26,7 +26,7 @@ import { Test, Question } from "@shared/schema";
 
 // Mock data for Achievers Book
 const mockAchieversData = {
-  summary: `
+  summary: String.raw`
 # Chapter 5: Electromagnetism
 
 ### Key Concepts

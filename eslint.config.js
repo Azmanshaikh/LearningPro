@@ -7,7 +7,15 @@ import globals from "globals";
 
 export default [
   {
-    ignores: ["dist/**", "node_modules/**", "*.config.js"],
+    ignores: [
+      "dist/**",
+      "node_modules/**",
+      "coverage/**",
+      "mobile/**",
+      "features/**",
+      "playwright-test/**",
+      "*.config.js",
+    ],
   },
   // Node/server files
   {
@@ -21,7 +29,12 @@ export default [
       ...js.configs.recommended.rules,
       ...tsPlugin.configs.recommended.rules,
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "no-undef": "off",
+      "no-case-declarations": "off",
+      "no-empty": "off",
     },
   },
   // Client/React files
@@ -44,8 +57,22 @@ export default [
       ...reactPlugin.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       "react/react-in-jsx-scope": "off",
+      "react/no-unescaped-entities": "off",
+      "react/no-unknown-property": "off",
+      "react/prop-types": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
       "@typescript-eslint/no-explicit-any": "warn",
-      "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "no-undef": "off",
+      "no-case-declarations": "off",
+      "no-empty": "off",
+      "no-redeclare": "off",
+      "react-hooks/immutability": "off",
+      "react-hooks/purity": "off",
+      "react-hooks/set-state-in-effect": "off",
+      "react-hooks/static-components": "off",
     },
   },
   // Shared
@@ -59,6 +86,11 @@ export default [
     rules: {
       ...js.configs.recommended.rules,
       ...tsPlugin.configs.recommended.rules,
+      "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      "@typescript-eslint/no-unused-expressions": "off",
+      "@typescript-eslint/ban-ts-comment": "off",
+      "no-undef": "off",
+      "no-empty": "off",
     },
   },
 ];

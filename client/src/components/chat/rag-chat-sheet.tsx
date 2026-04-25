@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { X, Send, Book, FileText, ChevronDown, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { apiRequest } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 import ReactMarkdown from "react-markdown";
 
@@ -56,16 +57,9 @@ export function RagChatSheet({ isOpen, onClose, subjectName, initialPrompt }: Ra
     setIsTyping(true);
 
     try {
-      const response = await fetch("/api/ai-chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
-        }),
+      const response = await apiRequest("POST", "/api/ai-chat", {
+        messages: updatedMessages.map((m) => ({ role: m.role, content: m.content })),
       });
-
-      if (!response.ok) throw new Error("Failed to get AI response");
-
       const data = await response.json();
       const assistantMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -75,6 +69,13 @@ export function RagChatSheet({ isOpen, onClose, subjectName, initialPrompt }: Ra
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (error) {
       console.error("AI chat error:", error);
+      const fallbackMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content:
+          "I couldn't reach the tutor service. Please check that you're signed in and try again.",
+      };
+      setMessages((prev) => [...prev, fallbackMsg]);
     } finally {
       setIsTyping(false);
     }
