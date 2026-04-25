@@ -437,7 +437,7 @@ export default function StudentDashboard() {
       {!showBadge && (
         <Button
           onClick={triggerBadge}
-          className="fixed bottom-8 right-8 h-14 w-14 animate-bounce rounded-full border-2 border-white/20 bg-energy shadow-modal hover:bg-energy-dark"
+          className="fixed bottom-8 right-8 h-14 w-14 rounded-full border-2 border-white/20 bg-energy shadow-modal hover:bg-energy-dark"
         >
           <Award className="h-7 w-7 text-white" />
         </Button>

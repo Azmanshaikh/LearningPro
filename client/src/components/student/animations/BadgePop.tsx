@@ -72,10 +72,12 @@ export const BadgePop: React.FC<BadgePopProps> = ({ badge, isOpen, onClose }) =>
             className="relative w-full max-w-sm rounded-[2.5rem] border border-white/20 bg-gradient-badge p-8 text-center shadow-[0_20px_60px_rgba(0,0,0,0.3)]"
           >
             <button
+              type="button"
               onClick={onClose}
-              className="absolute right-6 top-6 rounded-full p-2 transition-colors hover:bg-black/5"
+              aria-label="Close badge popup"
+              className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-background/90 text-muted-foreground shadow-soft transition-colors hover:bg-black/10 focus:outline-none focus:ring-2 focus:ring-accent"
             >
-              <X className="h-5 w-5 text-muted-foreground" />
+              <X className="h-5 w-5" />
             </button>
 
             <div className="mb-6">
