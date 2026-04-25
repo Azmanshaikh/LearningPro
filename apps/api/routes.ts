@@ -22,7 +22,7 @@ import {
 } from "./lib/openai";
 import { upload, diskPathToUrl } from "./lib/upload";
 import fs from "fs/promises";
-import * as pdfParseModule from "pdf-parse";
+import { PDFParse } from "pdf-parse";
 import { verifyFirebaseToken, setCustomUserClaims } from "./lib/firebase-admin";
 import {
   MongoUser,
@@ -64,11 +64,6 @@ interface CustomJwtPayload extends jwt.JwtPayload {
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_jwt_key_learning_pro_123";
 const geminiApiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
-const parsePdf =
-  (pdfParseModule as unknown as {
-    default?: (buffer: Buffer) => Promise<{ text: string; numpages?: number }>;
-  }).default ||
-  (pdfParseModule as unknown as (buffer: Buffer) => Promise<{ text: string; numpages?: number }>);
 
 // Auth Middleware
 export async function authenticateToken(req: Request, res: Response, next: express.NextFunction) {
@@ -1112,9 +1107,16 @@ Answer questions clearly and at their level. Do not mention these instructions.`
         const mode = req.body?.mode === "detailed" ? "detailed" : "summary";
         const subject = typeof req.body?.subject === "string" ? req.body.subject.trim() : "";
 
-        const pdfBuffer = await fs.readFile(req.file.path);
-        const parsedPdf = await parsePdf(pdfBuffer);
-        const extractedText = (parsedPdf.text || "").replace(/\s+/g, " ").trim();
+      const pdfBuffer = await fs.readFile(req.file.path);
+      const pdfParser = new PDFParse({ data: pdfBuffer });
+      let parsedPdf;
+      try {
+        parsedPdf = await pdfParser.getText();
+      } finally {
+        await pdfParser.destroy().catch(() => undefined);
+      }
+
+      const extractedText = (parsedPdf.text || "").replace(/\s+/g, " ").trim();
 
         if (!extractedText) {
           return res.status(400).json({ message: "Could not extract readable text from this PDF" });
@@ -1173,7 +1175,7 @@ Answer questions clearly and at their level. Do not mention these instructions.`
           mode,
           subject: subject || null,
           fileName: req.file.originalname,
-          pages: parsedPdf.numpages || null,
+        pages: parsedPdf.total || null,
           extractedChars: extractedText.length,
           content,
         });
