@@ -167,6 +167,7 @@ export default function AiTutor() {
     setIsChatOpen(true);
   };
 
+
   const activeFocusSubject = focusSubject || subjects[0]?.name || "General Study";
 
   return (
