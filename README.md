@@ -164,8 +164,10 @@ VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_MEASUREMENT_ID=
 FIREBASE_SERVICE_ACCOUNT_JSON=   # base64-encoded service account
 
-# OpenAI (Required for AI features)
-OPENAI_API_KEY=
+# Gemini / Google AI (Required for AI features)
+GEMINI_API_KEY=
+# or GOOGLE_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash
 
 # Email (Required for invite system)
 SMTP_HOST=smtp.gmail.com

@@ -260,8 +260,19 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     } else {
       return null;
     }
-  } catch (error) {
-    console.error("Error getting user profile:", error);
+  } catch (error: any) {
+    const code = String(error?.code || "");
+    const message = String(error?.message || "").toLowerCase();
+    const isOffline =
+      code === "unavailable" ||
+      code === "failed-precondition" ||
+      message.includes("client is offline") ||
+      message.includes("offline");
+
+    if (!isOffline) {
+      console.error("Error getting user profile:", error);
+    }
+
     return null;
   }
 };
