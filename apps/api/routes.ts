@@ -63,7 +63,7 @@ interface CustomJwtPayload extends jwt.JwtPayload {
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_jwt_key_learning_pro_123";
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY?.trim();
+const geminiApiKey = process.env.GEMINI_API_KEY?.trim() || process.env.GOOGLE_API_KEY?.trim();
 const parsePdf =
   (pdfParseModule as unknown as { default?: (buffer: Buffer) => Promise<{ text: string; numpages?: number }> }).default ||
   (pdfParseModule as unknown as (buffer: Buffer) => Promise<{ text: string; numpages?: number }>);
@@ -1118,29 +1118,31 @@ Answer questions clearly and at their level. Do not mention these instructions.`
           return res.status(400).json({ message: "Could not extract readable text from this PDF" });
         }
 
+        if (!geminiApiKey) {
+          return res.status(500).json({ message: "GEMINI_API_KEY or GOOGLE_API_KEY is not configured" });
+        }
+
+
         const maxInputChars = 24000;
         const clippedText = extractedText.slice(0, maxInputChars);
         const promptStyle =
           mode === "detailed"
             ? "Provide a detailed explanation with headings, key concepts, examples, and practical takeaways."
             : "Provide a concise whole-document summary with key points and short bullets.";
-
         const scopeLine = subject
           ? `The subject context is: ${subject}. Tailor terminology and examples accordingly.`
           : "Use neutral school-level explanations.";
-
-        if (!GOOGLE_API_KEY) {
-          return res.status(500).json({ message: "GOOGLE_API_KEY is not configured" });
-        }
-
-        const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.0-flash";
+        const model = process.env.GEMINI_MODEL?.trim() || "gemini-2.5-flash";
         const prompt = `${scopeLine} ${promptStyle}\n\nDocument content:\n${clippedText}`;
 
         const geminiRes = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent?key=${encodeURIComponent(GOOGLE_API_KEY)}`,
+          `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,
           {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: {
+              "Content-Type": "application/json",
+              "x-goog-api-key": geminiApiKey,
+            },
             body: JSON.stringify({
               contents: [{ parts: [{ text: prompt }] }],
             }),

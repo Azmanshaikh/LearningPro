@@ -46,6 +46,8 @@ services:
         sync: false
       - key: APP_URL
         sync: false
+      - key: START_MESSAGEPAL_HTTP
+        value: "false"
       - key: ASTRA_DB_SECURE_BUNDLE_PATH
         value: ./config/secure-connect-chat-db.zip
       - key: ASTRA_DB_APPLICATION_TOKEN
